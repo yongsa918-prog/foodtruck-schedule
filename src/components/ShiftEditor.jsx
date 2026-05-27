@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { supabase } from '../supabaseClient'
 import { truckClass } from '../utils/colors'
 import { calcHoursFromTimeText } from '../utils/timeCalc'
@@ -15,9 +15,13 @@ export default function ShiftEditor({ shift, staff, onDelete, onSaved, showDragH
   })
   const [saving, setSaving] = useState(false)
 
+  const [aDragIdx, setADragIdx] = useState(null)
+  const [aOverIdx, setAOverIdx] = useState(null)
+  const aDragAllowed = useRef(false)
+
   const cls = truckClass(shift.truck)
   const label = shift.shift_label ? `${shift.truck} ${shift.shift_label}` : shift.truck
-  const assignments = shift.assignment || []
+  const assignments = [...(shift.assignment || [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
 
   async function handleSaveShift(e) {
     e.preventDefault()
@@ -42,12 +46,14 @@ export default function ShiftEditor({ shift, staff, onDelete, onSaved, showDragH
   async function handleAddAssignment(staffId) {
     const person = staff.find((s) => String(s.id) === String(staffId))
     if (!person) return
+    const maxOrder = assignments.reduce((max, a) => Math.max(max, a.sort_order ?? 0), -1)
     const { error } = await supabase.from('assignment').insert({
       shift_id: shift.id,
       staff_id: person.id,
       member_text: person.name,
       is_driver: false,
       is_tentative: false,
+      sort_order: maxOrder + 1,
     })
     if (error) alert('배정 실패: ' + error.message)
     else onSaved()
@@ -66,6 +72,51 @@ export default function ShiftEditor({ shift, staff, onDelete, onSaved, showDragH
   async function handleToggleTentative(assignment) {
     await supabase.from('assignment').update({ is_tentative: !assignment.is_tentative }).eq('id', assignment.id)
     onSaved()
+  }
+
+  function handleADragStart(e, idx) {
+    if (!aDragAllowed.current) { e.preventDefault(); return }
+    e.stopPropagation()
+    setADragIdx(idx)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', '')
+  }
+
+  function handleADragOver(e, idx) {
+    e.preventDefault()
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'move'
+    if (aOverIdx !== idx) setAOverIdx(idx)
+  }
+
+  async function handleADrop(e, idx) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (aDragIdx === null || aDragIdx === idx) {
+      setADragIdx(null)
+      setAOverIdx(null)
+      return
+    }
+
+    const reordered = [...assignments]
+    const [moved] = reordered.splice(aDragIdx, 1)
+    reordered.splice(idx, 0, moved)
+
+    setADragIdx(null)
+    setAOverIdx(null)
+
+    await Promise.all(
+      reordered.map((a, i) =>
+        supabase.from('assignment').update({ sort_order: i }).eq('id', a.id)
+      )
+    )
+    onSaved()
+  }
+
+  function handleADragEnd() {
+    aDragAllowed.current = false
+    setADragIdx(null)
+    setAOverIdx(null)
   }
 
   const assignedIds = assignments.map((a) => a.staff_id)
@@ -138,8 +189,23 @@ export default function ShiftEditor({ shift, staff, onDelete, onSaved, showDragH
       <div className="assignment-section">
         <div className="assignment-label">배정 인원</div>
         {assignments.length === 0 && <div className="assignment-empty">배정된 인원 없음</div>}
-        {assignments.map((a) => (
-          <div key={a.id} className="assignment-row">
+        {assignments.map((a, idx) => (
+          <div
+            key={a.id}
+            className={`assignment-row${aDragIdx === idx ? ' dragging' : ''}${aOverIdx === idx && aDragIdx !== null && aDragIdx !== idx ? (aDragIdx > idx ? ' drag-over-above' : ' drag-over-below') : ''}`}
+            draggable={assignments.length > 1}
+            onDragStart={(e) => handleADragStart(e, idx)}
+            onDragOver={(e) => handleADragOver(e, idx)}
+            onDrop={(e) => handleADrop(e, idx)}
+            onDragEnd={handleADragEnd}
+          >
+            {assignments.length > 1 && (
+              <span
+                className="assign-drag-handle"
+                onMouseDown={() => { aDragAllowed.current = true }}
+                onMouseUp={() => { aDragAllowed.current = false }}
+              >⠿</span>
+            )}
             <span className="assignment-name">{a.member_text}</span>
             <button
               className={`tag-btn ${a.is_driver ? 'on' : ''}`}

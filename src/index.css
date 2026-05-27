@@ -199,7 +199,11 @@ body {
   border-radius: 8px;
   cursor: pointer;
 }
-.month-nav button:hover { border-color: var(--ink); }
+.month-nav button:hover:not(:disabled) { border-color: var(--ink); }
+.month-nav button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
 .month-label {
   font-size: 20px;
   font-weight: 700;
@@ -833,6 +837,34 @@ body {
   gap: 6px;
   padding: 5px 0;
   border-bottom: 1px solid rgba(0,0,0,0.04);
+  transition: opacity 0.15s;
+}
+.assignment-row.dragging {
+  opacity: 0.3;
+}
+.assignment-row.drag-over-above {
+  border-top: 2px solid var(--t1);
+}
+.assignment-row.drag-over-below {
+  border-bottom: 2px solid var(--t1);
+}
+.assign-drag-handle {
+  cursor: grab;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 2px 2px;
+  border-radius: 4px;
+  user-select: none;
+  line-height: 1;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+.assign-drag-handle:hover {
+  background: rgba(0,0,0,0.06);
+  color: var(--ink);
+}
+.assign-drag-handle:active {
+  cursor: grabbing;
 }
 .assignment-name {
   font-size: 14px;
@@ -1019,6 +1051,75 @@ body {
 }
 .drag-handle:active {
   cursor: grabbing;
+}
+
+/* Weekly view */
+.week-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.week-day {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.week-day.off {
+  background: #faf8f1;
+}
+.week-day.today {
+  border-color: var(--t1);
+  border-width: 2px;
+}
+.week-day-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.week-day-header.no-shifts {
+  margin-bottom: 0;
+}
+.week-day-num {
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.week-day-dow {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.week-day-dow.we {
+  color: var(--match);
+}
+.week-day-today {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--t1);
+  background: var(--t1bg);
+  border: 1px solid var(--t1ln);
+  border-radius: 999px;
+  padding: 1px 10px;
+}
+.week-day-off {
+  font-size: 14px;
+  color: #b7b3a6;
+  margin-left: auto;
+}
+.week-day.clickable {
+  cursor: pointer;
+  transition: 0.12s;
+}
+.week-day.clickable:hover {
+  border-color: var(--ink);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.week-day-shifts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* Responsive */

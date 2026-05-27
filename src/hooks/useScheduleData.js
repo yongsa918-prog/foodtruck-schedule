@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabaseClient'
 
-export function useScheduleData(year, month) {
+export function useScheduleData(startDate, endDate) {
   const [shifts, setShifts] = useState([])
   const [staff, setStaff] = useState([])
   const [loading, setLoading] = useState(true)
@@ -12,15 +12,10 @@ export function useScheduleData(year, month) {
     setLoading(true)
     setError(null)
 
-    const startDate = `${year}-${String(month).padStart(2, '0')}-01`
-    const nextMonth = month + 1 > 12 ? 1 : month + 1
-    const nextYear = month + 1 > 12 ? year + 1 : year
-    const endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`
-
     const [shiftsRes, staffRes] = await Promise.all([
       supabase
         .from('shift')
-        .select('*, assignment(id, staff_id, member_text, is_driver, is_tentative)')
+        .select('*, assignment(id, staff_id, member_text, is_driver, is_tentative, sort_order)')
         .gte('work_date', startDate)
         .lt('work_date', endDate)
         .order('work_date')
@@ -42,7 +37,7 @@ export function useScheduleData(year, month) {
       setStaff(staffRes.data)
     }
     setLoading(false)
-  }, [year, month])
+  }, [startDate, endDate])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -52,7 +47,7 @@ export function useScheduleData(year, month) {
     }
 
     const channel = supabase
-      .channel(`schedule-${year}-${month}`)
+      .channel(`schedule-${startDate}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'shift' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'assignment' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'staff' }, () => fetchData())
@@ -63,7 +58,7 @@ export function useScheduleData(year, month) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [year, month, fetchData])
+  }, [startDate, endDate, fetchData])
 
   return { shifts, staff, loading, error, refresh: fetchData }
 }
