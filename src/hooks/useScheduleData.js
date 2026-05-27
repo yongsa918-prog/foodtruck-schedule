@@ -24,6 +24,7 @@ export function useScheduleData(year, month) {
         .gte('work_date', startDate)
         .lt('work_date', endDate)
         .order('work_date')
+        .order('sort_order')
         .order('id'),
       supabase
         .from('staff')

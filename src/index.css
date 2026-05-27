@@ -231,6 +231,7 @@ body {
   border: 1px solid var(--line);
   border-radius: 10px;
   min-height: 110px;
+  min-width: 0;
   padding: 7px;
   display: flex;
   flex-direction: column;
@@ -263,6 +264,9 @@ body {
   background: #fff;
   font-size: 15px;
   line-height: 1.4;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .shift-card.t1 { background: var(--t1bg); border-color: var(--t1ln); }
 .shift-card.t2 { background: var(--t2bg); border-color: var(--t2ln); }
@@ -275,6 +279,7 @@ body {
   gap: 5px;
   flex-wrap: wrap;
   margin-bottom: 2px;
+  min-width: 0;
 }
 .badge {
   font-size: 13px;
@@ -308,6 +313,8 @@ body {
   font-weight: 600;
   line-height: 1.3;
   margin-bottom: 2px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .shift-chips {
   display: flex;
@@ -321,13 +328,16 @@ body {
   border-radius: 5px;
   padding: 1px 6px;
   color: #374151;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .shift-note {
   font-size: 14px;
   color: var(--muted);
   line-height: 1.3;
   margin-top: 2px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .shift-note.match {
   color: var(--match);
@@ -968,6 +978,47 @@ body {
 .btn-add-shift:hover {
   border-color: var(--ink);
   color: var(--ink);
+}
+
+/* Drag and drop */
+.drag-wrapper {
+  transition: opacity 0.15s;
+}
+.drag-wrapper.dragging {
+  opacity: 0.3;
+}
+.drag-wrapper.drag-over-above::before {
+  content: '';
+  display: block;
+  height: 3px;
+  background: var(--t1);
+  border-radius: 3px;
+  margin-bottom: 6px;
+}
+.drag-wrapper.drag-over-below::after {
+  content: '';
+  display: block;
+  height: 3px;
+  background: var(--t1);
+  border-radius: 3px;
+  margin-top: 6px;
+}
+.drag-handle {
+  cursor: grab;
+  color: var(--muted);
+  font-size: 18px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  user-select: none;
+  line-height: 1;
+  letter-spacing: 1px;
+}
+.drag-handle:hover {
+  background: rgba(0,0,0,0.06);
+  color: var(--ink);
+}
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 /* Responsive */

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { truckClass } from '../utils/colors'
 
-export default function ShiftEditor({ shift, staff, onDelete, onSaved }) {
+export default function ShiftEditor({ shift, staff, onDelete, onSaved, showDragHandle, onDragHandleDown, onDragHandleUp }) {
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({
     truck: shift.truck,
@@ -73,6 +73,14 @@ export default function ShiftEditor({ shift, staff, onDelete, onSaved }) {
   return (
     <div className={`editor-card ${cls}`}>
       <div className="editor-header">
+        {showDragHandle && (
+          <span
+            className="drag-handle"
+            onMouseDown={onDragHandleDown}
+            onMouseUp={onDragHandleUp}
+            title="드래그하여 순서 변경"
+          >⠿</span>
+        )}
         <span className={`badge ${cls}`}>{label}</span>
         {shift.time_text && <span className="editor-time">{shift.time_text}</span>}
         {shift.hours && <span className="editor-hours">{shift.hours}h</span>}

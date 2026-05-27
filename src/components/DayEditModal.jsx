@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { supabase } from '../supabaseClient'
 import ShiftEditor from './ShiftEditor'
 import { truckClass } from '../utils/colors'
@@ -14,6 +14,9 @@ export default function DayEditModal({ date, shifts, staff, onClose, onSaved }) 
     note: '',
   })
   const [saving, setSaving] = useState(false)
+  const [dragIdx, setDragIdx] = useState(null)
+  const [overIdx, setOverIdx] = useState(null)
+  const dragAllowed = useRef(false)
 
   const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
   const dayShifts = shifts.filter((s) => s.work_date === dateStr)
@@ -21,6 +24,7 @@ export default function DayEditModal({ date, shifts, staff, onClose, onSaved }) 
   async function handleAddShift(e) {
     e.preventDefault()
     setSaving(true)
+    const maxOrder = dayShifts.reduce((max, s) => Math.max(max, s.sort_order ?? 0), -1)
     const { error } = await supabase.from('shift').insert({
       work_date: dateStr,
       truck: newShift.truck,
@@ -29,6 +33,7 @@ export default function DayEditModal({ date, shifts, staff, onClose, onSaved }) 
       time_text: newShift.time_text || null,
       hours: newShift.hours ? parseFloat(newShift.hours) : null,
       note: newShift.note || null,
+      sort_order: maxOrder + 1,
     })
     setSaving(false)
     if (!error) {
@@ -47,6 +52,51 @@ export default function DayEditModal({ date, shifts, staff, onClose, onSaved }) 
     onSaved()
   }
 
+  function handleDragStart(e, idx) {
+    if (!dragAllowed.current) {
+      e.preventDefault()
+      return
+    }
+    setDragIdx(idx)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', '')
+  }
+
+  function handleDragOver(e, idx) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (overIdx !== idx) setOverIdx(idx)
+  }
+
+  async function handleDrop(e, idx) {
+    e.preventDefault()
+    if (dragIdx === null || dragIdx === idx) {
+      setDragIdx(null)
+      setOverIdx(null)
+      return
+    }
+
+    const reordered = [...dayShifts]
+    const [moved] = reordered.splice(dragIdx, 1)
+    reordered.splice(idx, 0, moved)
+
+    setDragIdx(null)
+    setOverIdx(null)
+
+    await Promise.all(
+      reordered.map((s, i) =>
+        supabase.from('shift').update({ sort_order: i }).eq('id', s.id)
+      )
+    )
+    onSaved()
+  }
+
+  function handleDragEnd() {
+    dragAllowed.current = false
+    setDragIdx(null)
+    setOverIdx(null)
+  }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -60,14 +110,26 @@ export default function DayEditModal({ date, shifts, staff, onClose, onSaved }) 
             <div className="empty-msg">이 날은 시프트가 없습니다.</div>
           )}
 
-          {dayShifts.map((shift) => (
-            <ShiftEditor
+          {dayShifts.map((shift, idx) => (
+            <div
               key={shift.id}
-              shift={shift}
-              staff={staff}
-              onDelete={() => handleDeleteShift(shift.id)}
-              onSaved={onSaved}
-            />
+              draggable={dayShifts.length > 1}
+              onDragStart={(e) => handleDragStart(e, idx)}
+              onDragOver={(e) => handleDragOver(e, idx)}
+              onDrop={(e) => handleDrop(e, idx)}
+              onDragEnd={handleDragEnd}
+              className={`drag-wrapper${dragIdx === idx ? ' dragging' : ''}${overIdx === idx && dragIdx !== null && dragIdx !== idx ? (dragIdx > idx ? ' drag-over-above' : ' drag-over-below') : ''}`}
+            >
+              <ShiftEditor
+                shift={shift}
+                staff={staff}
+                onDelete={() => handleDeleteShift(shift.id)}
+                onSaved={onSaved}
+                showDragHandle={dayShifts.length > 1}
+                onDragHandleDown={() => { dragAllowed.current = true }}
+                onDragHandleUp={() => { dragAllowed.current = false }}
+              />
+            </div>
           ))}
 
           {adding ? (

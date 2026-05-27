@@ -80,8 +80,11 @@ export default function ExcelUpload({ staff, onDone }) {
       }
 
       const total = parsed.shifts.length
+      const dateCounters = {}
       for (let i = 0; i < total; i++) {
         const s = parsed.shifts[i]
+        if (!dateCounters[s.work_date]) dateCounters[s.work_date] = 0
+        const sortOrder = dateCounters[s.work_date]++
         setProgress(`시프트 업로드 중... (${i + 1}/${total})`)
 
         const { data: shiftData, error: shiftErr } = await supabase
@@ -94,6 +97,7 @@ export default function ExcelUpload({ staff, onDone }) {
             time_text: s.time_text,
             hours: s.hours,
             note: s.note,
+            sort_order: sortOrder,
           })
           .select('id')
           .single()

@@ -22,8 +22,8 @@ function ShiftCard({ shift }) {
           {shift.assignment.map((a) => (
             <span key={a.id} className="chip">
               {a.member_text}
-              {a.is_driver ? ' (D)' : ''}
-              {a.is_tentative ? '?' : ''}
+              {a.is_driver && !a.member_text.includes('(D)') ? ' (D)' : ''}
+              {a.is_tentative && !a.member_text.includes('?') ? '?' : ''}
             </span>
           ))}
         </div>
