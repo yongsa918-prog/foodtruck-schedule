@@ -1,0 +1,141 @@
+import { useState } from 'react'
+import { supabase } from '../supabaseClient'
+import ShiftEditor from './ShiftEditor'
+import { truckClass } from '../utils/colors'
+
+export default function DayEditModal({ date, shifts, staff, onClose, onSaved }) {
+  const [adding, setAdding] = useState(false)
+  const [newShift, setNewShift] = useState({
+    truck: '1호',
+    shift_label: '',
+    event: '',
+    time_text: '',
+    hours: '',
+    note: '',
+  })
+  const [saving, setSaving] = useState(false)
+
+  const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  const dayShifts = shifts.filter((s) => s.work_date === dateStr)
+
+  async function handleAddShift(e) {
+    e.preventDefault()
+    setSaving(true)
+    const { error } = await supabase.from('shift').insert({
+      work_date: dateStr,
+      truck: newShift.truck,
+      shift_label: newShift.shift_label || null,
+      event: newShift.event || null,
+      time_text: newShift.time_text || null,
+      hours: newShift.hours ? parseFloat(newShift.hours) : null,
+      note: newShift.note || null,
+    })
+    setSaving(false)
+    if (!error) {
+      setAdding(false)
+      setNewShift({ truck: '1호', shift_label: '', event: '', time_text: '', hours: '', note: '' })
+      onSaved()
+    } else {
+      alert('저장 실패: ' + error.message)
+    }
+  }
+
+  async function handleDeleteShift(shiftId) {
+    if (!confirm('이 시프트를 삭제할까요? 배정도 모두 삭제됩니다.')) return
+    await supabase.from('assignment').delete().eq('shift_id', shiftId)
+    await supabase.from('shift').delete().eq('id', shiftId)
+    onSaved()
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{date.getMonth() + 1}월 {date.getDate()}일</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="modal-body">
+          {dayShifts.length === 0 && !adding && (
+            <div className="empty-msg">이 날은 시프트가 없습니다.</div>
+          )}
+
+          {dayShifts.map((shift) => (
+            <ShiftEditor
+              key={shift.id}
+              shift={shift}
+              staff={staff}
+              onDelete={() => handleDeleteShift(shift.id)}
+              onSaved={onSaved}
+            />
+          ))}
+
+          {adding ? (
+            <form className="shift-form" onSubmit={handleAddShift}>
+              <h3>새 시프트 추가</h3>
+              <div className="form-row">
+                <label>트럭</label>
+                <select value={newShift.truck} onChange={(e) => setNewShift({ ...newShift, truck: e.target.value })}>
+                  <option value="1호">1호</option>
+                  <option value="2호">2호</option>
+                  <option value="프랩">프랩</option>
+                  <option value="케이터링">케이터링</option>
+                </select>
+              </div>
+              <div className="form-row">
+                <label>구분</label>
+                <input
+                  placeholder="오픈, 클로즈, 풀데이..."
+                  value={newShift.shift_label}
+                  onChange={(e) => setNewShift({ ...newShift, shift_label: e.target.value })}
+                />
+              </div>
+              <div className="form-row">
+                <label>이벤트</label>
+                <input
+                  placeholder="FIFA PNE, Catering..."
+                  value={newShift.event}
+                  onChange={(e) => setNewShift({ ...newShift, event: e.target.value })}
+                />
+              </div>
+              <div className="form-row">
+                <label>시간</label>
+                <input
+                  placeholder="10am–4pm"
+                  value={newShift.time_text}
+                  onChange={(e) => setNewShift({ ...newShift, time_text: e.target.value })}
+                />
+              </div>
+              <div className="form-row">
+                <label>시간수</label>
+                <input
+                  type="number"
+                  step="0.25"
+                  placeholder="6.0"
+                  value={newShift.hours}
+                  onChange={(e) => setNewShift({ ...newShift, hours: e.target.value })}
+                />
+              </div>
+              <div className="form-row">
+                <label>비고</label>
+                <input
+                  placeholder="메모..."
+                  value={newShift.note}
+                  onChange={(e) => setNewShift({ ...newShift, note: e.target.value })}
+                />
+              </div>
+              <div className="form-actions">
+                <button type="submit" className="btn-primary" disabled={saving}>
+                  {saving ? '저장 중...' : '추가'}
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => setAdding(false)}>취소</button>
+              </div>
+            </form>
+          ) : (
+            <button className="btn-add-shift" onClick={() => setAdding(true)}>+ 시프트 추가</button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

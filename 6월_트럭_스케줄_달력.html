@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>6월 트럭 스케줄</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1a1d24; --muted:#6b7280; --line:#e6e4dd; --paper:#fbf9f4; --card:#ffffff;
+  --t1:#2f5fd6; --t1bg:#eef3fe; --t1ln:#c3d4f7;
+  --t2:#0e8a6a; --t2bg:#e9f6f0; --t2ln:#bce6d6;
+  --prep:#9a6a14; --prepbg:#fbf2dc; --prepln:#ecd9a6;
+  --cater:#7a3fb0; --caterbg:#f3ebfa; --caterln:#ddc8ef;
+  --match:#c2410c; --matchbg:#fdeee5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"IBM Plex Sans KR",sans-serif;background:var(--paper);color:var(--ink);
+  padding:28px 22px 48px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1480px;margin:0 auto}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;
+  flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:18px}
+.title{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;letter-spacing:-.02em;line-height:.95}
+.title .yr{font-size:15px;color:var(--muted);font-weight:600;letter-spacing:.04em}
+.title .mn{font-size:46px}
+.title .sub{font-family:"IBM Plex Sans KR";font-size:14px;color:var(--muted);font-weight:500;margin-top:4px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+.legend .key{display:flex;align-items:center;gap:6px}
+.swatch{width:13px;height:13px;border-radius:4px;border:1px solid rgba(0,0,0,.12)}
+.sw1{background:var(--t1)} .sw2{background:var(--t2)} .swp{background:var(--prep)} .swc{background:var(--cater)}
+.swm{background:var(--match)}
+
+.carry{background:var(--caterbg);border:1px solid var(--caterln);border-radius:12px;
+  padding:10px 14px;margin-bottom:16px;display:flex;flex-direction:column;gap:6px}
+.carry-label{font-size:11px;font-weight:700;color:var(--cater);letter-spacing:.06em;text-transform:uppercase}
+.carry-item{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px}
+.carry-date{font-weight:700;font-variant-numeric:tabular-nums}
+.carry-ev{font-weight:600} .carry-time{color:var(--muted)}
+.carry-mem{color:#374151} .carry-note{color:var(--cater);font-size:12px}
+
+.dowrow{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:8px}
+.dow{font-family:"Bricolage Grotesque";font-weight:700;font-size:13px;color:var(--muted);
+  text-align:center;padding:4px 0;letter-spacing:.05em}
+.dow.we{color:var(--match)}
+
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.cell{background:var(--card);border:1px solid var(--line);border-radius:12px;min-height:118px;
+  padding:8px;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+.cell.out{background:transparent;border-color:transparent}
+.cell.out .daynum{color:#cdcabf}
+.cell.empty{background:#faf8f1}
+.daynum{font-family:"Bricolage Grotesque";font-weight:700;font-size:16px;color:var(--ink);
+  font-variant-numeric:tabular-nums;line-height:1}
+.off{font-size:12px;color:#b7b3a6;margin-top:auto;margin-bottom:auto;text-align:center;font-weight:500}
+
+.shift{border-radius:9px;padding:6px 7px;border:1px solid var(--line);background:#fff}
+.shift.t1{background:var(--t1bg);border-color:var(--t1ln)}
+.shift.t2{background:var(--t2bg);border-color:var(--t2ln)}
+.shift.prep{background:var(--prepbg);border-color:var(--prepln)}
+.shift.cater{background:var(--caterbg);border-color:var(--caterln)}
+.shift-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px}
+.badge{font-size:10.5px;font-weight:700;padding:1.5px 7px;border-radius:20px;color:#fff;letter-spacing:.02em;white-space:nowrap}
+.badge.t1{background:var(--t1)} .badge.t2{background:var(--t2)}
+.badge.prep{background:var(--prep)} .badge.cater{background:var(--cater)}
+.time{font-size:11px;font-weight:600;color:#374151;font-variant-numeric:tabular-nums}
+.hrs{font-size:10.5px;font-weight:700;color:var(--muted);margin-left:auto;
+  background:#fff;border:1px solid var(--line);border-radius:6px;padding:0 5px}
+.event{font-size:12.5px;font-weight:600;color:var(--ink);line-height:1.25;margin-bottom:3px}
+.chips{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:2px}
+.chip{font-size:10.5px;background:rgba(255,255,255,.7);border:1px solid rgba(0,0,0,.08);
+  border-radius:6px;padding:1px 6px;color:#374151;white-space:nowrap}
+.note{font-size:11px;color:var(--muted);line-height:1.3;margin-top:2px}
+.note.match{color:var(--match);font-weight:700;background:var(--matchbg);
+  border-radius:6px;padding:2px 6px;display:inline-block}
+
+footer{margin-top:20px;font-size:12px;color:var(--muted);display:flex;gap:18px;flex-wrap:wrap;
+  border-top:1px solid var(--line);padding-top:12px}
+footer b{color:var(--ink)}
+
+@media print{
+  body{background:#fff;padding:0}
+  .cell{min-height:96px}
+  @page{size:A3 landscape;margin:10mm}
+}
+@media (max-width:760px){
+  .grid,.dowrow{grid-template-columns:1fr;gap:6px}
+  .dow{display:none}
+  .cell{min-height:auto}
+  .cell.out{display:none}
+  .cell.empty{flex-direction:row;align-items:center;justify-content:space-between;min-height:auto}
+  .cell.empty .off{margin:0}
+  .daynum::after{content:" 일";font-size:12px;color:var(--muted);font-weight:500}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title">
+      <div class="yr">2026</div>
+      <div class="mn">🚚 6월 푸드트럭 스케줄</div>
+      <div class="sub">Vancouver · FIFA PNE 시즌 · 트럭 1호 / 2호 운영</div>
+    </div>
+    <div class="legend">
+      <div class="key"><span class="swatch sw1"></span>1호 (FIFA PNE)</div>
+      <div class="key"><span class="swatch sw2"></span>2호 (이벤트)</div>
+      <div class="key"><span class="swatch swp"></span>프랩</div>
+      <div class="key"><span class="swatch swc"></span>케이터링</div>
+      <div class="key"><span class="swatch swm"></span>경기/특이사항</div>
+    </div>
+  </header>
+
+  <div class="carry">
+        <div class="carry-label">5월 말 케이터링 (참고)</div>
+        <div class="carry-item">
+            <span class="carry-date">5/28 (목)</span>
+            <span class="badge cater">케이터링</span>
+            <span class="carry-ev">Private Catering</span>
+            <span class="carry-time">11:30~1:30</span>
+            <span class="carry-mem">존 · 인한 · 뉴2(재원)</span>
+            <span class="carry-note">90인분</span>
+        </div><div class="carry-item">
+            <span class="carry-date">5/29 (금)</span>
+            <span class="badge cater">케이터링</span>
+            <span class="carry-ev">School Event – Way Point</span>
+            <span class="carry-time">11:00~1:00</span>
+            <span class="carry-mem">존 · 인한 · 뉴2(재원)</span>
+            <span class="carry-note">1000~2000</span>
+        </div>
+    </div>
+
+  <div class="dowrow"><div class="dow we">일</div><div class="dow ">월</div><div class="dow ">화</div><div class="dow ">수</div><div class="dow ">목</div><div class="dow ">금</div><div class="dow we">토</div></div>
+  <div class="grid"><div class="cell out"><div class="daynum">31</div></div><div class="cell empty"><div class="daynum">1</div><div class="off">휴무</div></div><div class="cell active">
+      <div class="daynum">2</div>
+      <div class="shift prep">
+      <div class="shift-top"><span class="badge prep">프랩</span></div>
+      <div class="event">Yellow Dog · Farmers Market 프랩</div>
+      <div class="chips"><span class="chip">인한</span></div>
+      
+    </div>
+    </div><div class="cell active">
+      <div class="daynum">3</div>
+      <div class="shift t2">
+      <div class="shift-top"><span class="badge t2">2호</span><span class="time">11am–8pm</span><span class="hrs">6.0h</span></div>
+      <div class="event">Richmond Commerce · Yellow Dog</div>
+      <div class="chips"><span class="chip">인한 (D)</span><span class="chip">존</span></div>
+      <div class="note ">Richmond 11~1pm 700~800 · Yellow Dog 2~8pm 400</div>
+    </div>
+    </div><div class="cell active">
+      <div class="daynum">4</div>
+      <div class="shift t2">
+      <div class="shift-top"><span class="badge t2">2호</span><span class="time">3pm–7pm</span><span class="hrs">4.0h</span></div>
+      <div class="event">Farmers Market</div>
+      <div class="chips"><span class="chip">션 or 첸 or 에이미</span><span class="chip">존</span></div>
+      <div class="note ">⚠ 인한 스케줄 안 됨 — 확인 필요</div>
+    </div>
+    </div><div class="cell active">
+      <div class="daynum">5</div>
+      <div class="shift t2">
+      <div class="shift-top"><span class="badge t2">2호</span><span class="time">5pm–11pm</span><span class="hrs">6.0h</span></div>
+      <div class="event">Multi Cultural</div>
+      <div class="chips"><span class="chip">존</span><span class="chip">인한</span><span class="chip">뉴2(재원)</span></div>
+      <div class="note ">⚠ 인원 조정 확인 요청</div>
+    </div>
+    </div><div class="cell active">
+      <div class="daynum">6</div>
+      <div class="shift t2">
+      <div class="shift-top"><span class="badge t2">2호</span><span class="time">5pm–11pm</span><span class="hrs">6.0h</span></div>
+      <div class="event">Multi Cultural</div>
+      <div class="chips"><span class="chip">존</span><span class="chip">인한</span><span class="chip">뉴2(재원)</span></div>
+      
+    </div>
+    </div><div class="cell empty"><div class="daynum">7</div><div class="off">휴무</div></div><div class="cell empty"><div class="daynum">8</div><div class="off">휴무</div></div><div class="cell empty"><div class="daynum">9</div><div class="off">휴무</div></div><div class="cell empty"><div class="daynum">10</div><div class="off">휴무</div></div><div class="cell active">
+      <div class="daynum">11</div>
+      <div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 오픈</span><span class="time">10am–4pm</span><span class="hrs">6.0h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">뉴2(재원)</span><span class="chip">뉴 캐셔(트레이닝) 12~8pm</span></div>
+      <div class="note ">유명 힙합 프로듀서</div>
+    </div><div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 클로즈</span><span class="time">4pm–9:30pm</span><span class="hrs">5.5h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">뉴2(재원)</span></div>
+      <div class="note match">⚽ 한국 vs 체코 7pm</div>
+    </div><div class="shift t2">
+      <div class="shift-top"><span class="badge t2">2호</span></div>
+      <div class="event">Granville Island</div>
+      <div class="chips"><span class="chip">존 (D)</span><span class="chip">첸</span></div>
+      
+    </div>
+    </div><div class="cell active">
+      <div class="daynum">12</div>
+      <div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 오픈</span><span class="time">10am–4pm</span><span class="hrs">6.0h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">니나 11am~7pm</span><span class="chip">뉴2(재원)</span><span class="chip">뉴 캐셔 4~9pm</span></div>
+      <div class="note match">⭐ Aus vs Tur 9pm</div>
+    </div><div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 클로즈</span><span class="time">4pm–9:30pm</span><span class="hrs">5.5h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">니나 11am~7pm</span><span class="chip">뉴2(재원)</span></div>
+      <div class="note match">⚽ 캐나다 홈경기 12pm</div>
+    </div><div class="shift t2">
+      <div class="shift-top"><span class="badge t2">2호</span></div>
+      <div class="event">Granville Island</div>
+      <div class="chips"><span class="chip">존 (D)</span><span class="chip">????</span></div>
+      
+    </div>
+    </div><div class="cell active">
+      <div class="daynum">13</div>
+      <div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 오픈</span><span class="time">11:30am–5:30pm</span><span class="hrs">6.0h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">니나 12pm~10pm</span><span class="chip">뉴2(재원)</span><span class="chip">뉴 캐셔 1~8pm</span></div>
+      <div class="note match">⚽ 브라질 vs 모로코</div>
+    </div><div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 클로즈</span><span class="time">5:30pm–10:45pm</span><span class="hrs">5.25h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">니나 12pm~10pm</span><span class="chip">뉴2(재원)</span></div>
+      
+    </div>
+    </div><div class="cell active">
+      <div class="daynum">14</div>
+      <div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 풀데이</span><span class="time">10am–6:45pm</span><span class="hrs">8.75h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">뉴2(재원)</span><span class="chip">니나 10am~6pm</span></div>
+      <div class="note ">유명 캐나다 래퍼</div>
+    </div>
+    </div><div class="cell empty"><div class="daynum">15</div><div class="off">휴무</div></div><div class="cell empty"><div class="daynum">16</div><div class="off">휴무</div></div><div class="cell active">
+      <div class="daynum">17</div>
+      <div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 풀데이</span><span class="time">10am–6:45pm</span><span class="hrs">8.75h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">뉴 캐셔 11am~6:30pm</span><span class="chip">뉴2(재원)</span></div>
+      <div class="note ">짧은날 → 클로즈팀 풀데이</div>
+    </div>
+    </div><div class="cell active">
+      <div class="daynum">18</div>
+      <div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 오픈</span><span class="time">10am–4pm</span><span class="hrs">5.5h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">니나 10am~4pm</span><span class="chip">뉴2(재원)</span><span class="chip">뉴 캐셔 1~8pm</span></div>
+      <div class="note match">⭐⭐⭐ Can vs Qatar 3pm+</div>
+    </div><div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 클로즈</span><span class="time">4pm–8:45pm</span><span class="hrs">4.45h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">니나 10am~4pm</span><span class="chip">뉴2(재원)</span><span class="chip">뉴 캐셔 1~8pm</span></div>
+      <div class="note ">오전 바쁜날 · 캐나다 홈경기</div>
+    </div><div class="shift t2">
+      <div class="shift-top"><span class="badge t2">2호</span></div>
+      <div class="event">Surrey Soccer Viewing</div>
+      <div class="chips"><span class="chip">존 (D)</span><span class="chip">??</span><span class="chip">??</span></div>
+      
+    </div>
+    </div><div class="cell active">
+      <div class="daynum">19</div>
+      <div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 오픈</span><span class="time">10am–3:30pm</span><span class="hrs">5.5h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">뉴 캐셔 12am~6pm</span><span class="chip">뉴2(재원)</span></div>
+      <div class="note ">호주 유명 뮤지션</div>
+    </div><div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 클로즈</span><span class="time">3:30pm–8:45pm</span><span class="hrs">5.25h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">니나 4pm~8:30pm</span><span class="chip">뉴2(재원)</span></div>
+      
+    </div><div class="shift t2">
+      <div class="shift-top"><span class="badge t2">2호</span></div>
+      <div class="event">Macneill Secondary School Catering</div>
+      <div class="chips"><span class="chip">존 (D)</span><span class="chip">??</span><span class="chip">??</span></div>
+      
+    </div>
+    </div><div class="cell active">
+      <div class="daynum">20</div>
+      <div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 오픈</span><span class="time">11:30am–5:30pm</span><span class="hrs">6.0h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">니나 12pm~10pm</span><span class="chip">뉴2(재원)</span><span class="chip">뉴 캐셔 1~8pm</span></div>
+      
+    </div><div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 클로즈</span><span class="time">5:30pm–10:45pm</span><span class="hrs">5.25h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">뉴2(재원)</span></div>
+      
+    </div><div class="shift t2">
+      <div class="shift-top"><span class="badge t2">2호</span></div>
+      <div class="event">Pinoy Festival</div>
+      <div class="chips"><span class="chip">존 (D)</span><span class="chip">??</span><span class="chip">??</span></div>
+      
+    </div>
+    </div><div class="cell active">
+      <div class="daynum">21</div>
+      <div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 오픈</span><span class="time">10am–4pm</span><span class="hrs">6.0h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">니나 10am~8pm</span><span class="chip">뉴2(재원)</span><span class="chip">뉴 캐셔 11pm~6pm</span></div>
+      <div class="note match">⭐ NZ vs Egy 6pm</div>
+    </div><div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 클로즈</span><span class="time">4pm–8:45pm</span><span class="hrs">4.45h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">니나 10am~8pm</span><span class="chip">뉴2(재원)</span></div>
+      
+    </div><div class="shift t2">
+      <div class="shift-top"><span class="badge t2">2호</span></div>
+      <div class="event">Pinoy Festival</div>
+      <div class="chips"><span class="chip">존 (D)</span><span class="chip">??</span><span class="chip">??</span></div>
+      
+    </div>
+    </div><div class="cell empty"><div class="daynum">22</div><div class="off">휴무</div></div><div class="cell empty"><div class="daynum">23</div><div class="off">휴무</div></div><div class="cell active">
+      <div class="daynum">24</div>
+      <div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 오픈</span><span class="time">10am–3:30pm</span><span class="hrs">5.5h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">니나</span><span class="chip">뉴2(재원)</span><span class="chip">뉴 캐셔</span></div>
+      <div class="note match">⭐⭐⭐ Can vs Switz 12pm</div>
+    </div><div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 클로즈</span><span class="time">3:30pm–8:45pm</span><span class="hrs">5.25h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">니나</span><span class="chip">뉴2(재원)</span><span class="chip">뉴 캐셔</span></div>
+      <div class="note ">밴쿠버 출신 유명 뮤지션 (4명 이상)</div>
+    </div><div class="shift t2">
+      <div class="shift-top"><span class="badge t2">2호</span></div>
+      <div class="event">Seaspan Shipyards</div>
+      <div class="chips"><span class="chip">존</span><span class="chip">션</span><span class="chip">??</span></div>
+      
+    </div>
+    </div><div class="cell active">
+      <div class="daynum">25</div>
+      <div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 오픈</span><span class="time">11am–4:30pm</span><span class="hrs">5.5h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">니나</span><span class="chip">뉴2(재원)</span></div>
+      <div class="note ">유명 캐나다 록밴드</div>
+    </div><div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 클로즈</span><span class="time">4:30pm–9:45pm</span><span class="hrs">5.25h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">니나</span><span class="chip">뉴3</span></div>
+      
+    </div><div class="shift t2">
+      <div class="shift-top"><span class="badge t2">2호</span></div>
+      <div class="event">Catering 170</div>
+      <div class="chips"><span class="chip">션</span><span class="chip">존</span><span class="chip">첸</span><span class="chip">??</span></div>
+      <div class="note ">뉴2(키친) 지원</div>
+    </div>
+    </div><div class="cell active">
+      <div class="daynum">26</div>
+      <div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 오픈</span><span class="time">12pm–5:30pm</span><span class="hrs">5.5h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span></div>
+      <div class="note match">⭐ NZ vs Belg 8pm</div>
+    </div><div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 클로즈</span><span class="time">5:30pm–10:45pm</span><span class="hrs">5.25h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span></div>
+      
+    </div>
+    </div><div class="cell active">
+      <div class="daynum">27</div>
+      <div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 오픈</span><span class="time">11am–4:30pm</span><span class="hrs">5.5h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">소피아</span></div>
+      <div class="note ">소피아 = 뉴1 대체</div>
+    </div><div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 클로즈</span><span class="time">4:30pm–10pm</span><span class="hrs">5.5h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">뉴1</span></div>
+      
+    </div><div class="shift t2">
+      <div class="shift-top"><span class="badge t2">2호</span></div>
+      <div class="event">Golden Spike Days</div>
+      <div class="chips"><span class="chip">존 (D)</span><span class="chip">??</span><span class="chip">??</span></div>
+      
+    </div>
+    </div><div class="cell active">
+      <div class="daynum">28</div>
+      <div class="shift t1">
+      <div class="shift-top"><span class="badge t1">1호 풀데이</span><span class="time">10am–4:15pm</span><span class="hrs">6.25h</span></div>
+      <div class="event">FIFA PNE</div>
+      <div class="chips"><span class="chip">인한</span><span class="chip">뉴1</span><span class="chip">뉴4</span><span class="chip">뉴2</span></div>
+      <div class="note ">짧은날 → 오픈팀 풀데이 (O/T +60분 가능)</div>
+    </div><div class="shift t2">
+      <div class="shift-top"><span class="badge t2">2호</span></div>
+      <div class="event">Golden Spike Days</div>
+      <div class="chips"><span class="chip">존 (D)</span><span class="chip">??</span><span class="chip">??</span></div>
+      
+    </div>
+    </div><div class="cell empty"><div class="daynum">29</div><div class="off">휴무</div></div><div class="cell empty"><div class="daynum">30</div><div class="off">휴무</div></div><div class="cell out"><div class="daynum">1</div></div><div class="cell out"><div class="daynum">2</div></div><div class="cell out"><div class="daynum">3</div></div><div class="cell out"><div class="daynum">4</div></div></div>
+
+  <footer>
+    <span><b>(D)</b> = Driver / 운전 담당</span>
+    <span><b>??</b> = 인원 미정 (배정 필요)</span>
+    <span><b>⭐ / ⚽</b> = FIFA 경기일 · 예상 혼잡</span>
+    <span><b>h</b> = 근무시간</span>
+  </footer>
+</div>
+</body>
+</html>
