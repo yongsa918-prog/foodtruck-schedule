@@ -1714,6 +1714,23 @@ body {
   color: var(--t1);
 }
 
+/* Backup button */
+.btn-backup {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  border: 1.5px solid var(--t2ln);
+  background: var(--t2bg);
+  color: var(--t2);
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: 0.12s;
+  white-space: nowrap;
+}
+.btn-backup:hover { border-color: var(--t2); }
+.btn-backup:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* Print styles */
 @media print {
   body { background: #fff; font-size: 11px; }
@@ -1721,7 +1738,8 @@ body {
 
   .header, .tabs, .month-nav, .footer, .legend,
   .modal-overlay, .login-gate,
-  .btn-print, .btn-excel, .date-picker-hidden { display: none !important; }
+  .btn-print, .btn-excel, .btn-backup,
+  .date-picker-hidden { display: none !important; }
 
   .print-header {
     display: block !important;

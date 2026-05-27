@@ -9,6 +9,7 @@ import ExcelUpload from './components/ExcelUpload'
 import AdminLock from './components/AdminLock'
 import { useScheduleData } from './hooks/useScheduleData'
 import { useAdmin } from './hooks/useAdminAuth'
+import { exportAllToExcel } from './utils/exportExcel'
 
 function pad2(n) { return String(n).padStart(2, '0') }
 
@@ -79,6 +80,7 @@ export default function App() {
   const [bulkMode, setBulkMode] = useState(false)
   const [selectedDates, setSelectedDates] = useState(new Set())
   const [deleting, setDeleting] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const { isAdmin } = useAdmin()
   const monthPickerRef = useRef(null)
 
@@ -267,6 +269,17 @@ export default function App() {
     setDownloading(false)
   }
 
+  async function handleExportExcel() {
+    if (exporting) return
+    setExporting(true)
+    try {
+      await exportAllToExcel()
+    } catch (err) {
+      alert('엑셀 백업 실패: ' + err.message)
+    }
+    setExporting(false)
+  }
+
   return (
     <div className="app">
       <div className="header">
@@ -322,6 +335,9 @@ export default function App() {
           <button className="btn-excel" onClick={() => setShowExcel(true)}>
             📊 엑셀 업로드
           </button>
+          <button className="btn-backup" onClick={handleExportExcel} disabled={exporting}>
+            {exporting ? '백업 중...' : '💾 엑셀 백업'}
+          </button>
         </div>
       ) : (
         <div className="month-nav">
@@ -344,6 +360,9 @@ export default function App() {
               </button>
               <button className="btn-excel" onClick={() => setShowExcel(true)}>
                 📊 엑셀 업로드
+              </button>
+              <button className="btn-backup" onClick={handleExportExcel} disabled={exporting}>
+                {exporting ? '백업 중...' : '💾 엑셀 백업'}
               </button>
             </>
           )}
@@ -405,6 +424,7 @@ export default function App() {
           onClose={() => setShowWeekPicker(false)}
         />
       )}
+
     </div>
   )
 }
