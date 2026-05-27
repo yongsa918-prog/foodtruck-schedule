@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { truckClass } from '../utils/colors'
+import { calcHoursFromTimeText } from '../utils/timeCalc'
 
 export default function ShiftEditor({ shift, staff, onDelete, onSaved, showDragHandle, onDragHandleDown, onDragHandleUp }) {
   const [editing, setEditing] = useState(false)
@@ -113,7 +114,11 @@ export default function ShiftEditor({ shift, staff, onDelete, onSaved, showDragH
           </div>
           <div className="form-row">
             <label>시간</label>
-            <input value={form.time_text} onChange={(e) => setForm({ ...form, time_text: e.target.value })} placeholder="10am–4pm" />
+            <input value={form.time_text} onChange={(e) => {
+              const t = e.target.value
+              const calc = calcHoursFromTimeText(t)
+              setForm({ ...form, time_text: t, ...(calc !== null ? { hours: calc } : {}) })
+            }} placeholder="10am–4pm" />
           </div>
           <div className="form-row">
             <label>시간수</label>

@@ -99,10 +99,11 @@ function StaffManager({ staff, onSaved }) {
                   className="staff-edit-input"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
+                  onBlur={() => { if (editName.trim() && editName.trim() !== s.name) handleRename(s.id); else setEditingId(null) }}
                   autoFocus
                 />
                 <button type="submit" className="btn-sm primary" disabled={saving}>저장</button>
-                <button type="button" className="btn-sm" onClick={() => setEditingId(null)}>취소</button>
+                <button type="button" className="btn-sm" onMouseDown={(e) => e.preventDefault()} onClick={() => setEditingId(null)}>취소</button>
               </form>
             ) : (
               <>

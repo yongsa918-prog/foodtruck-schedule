@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { supabase } from '../supabaseClient'
 import ShiftEditor from './ShiftEditor'
 import { truckClass } from '../utils/colors'
+import { calcHoursFromTimeText } from '../utils/timeCalc'
 
 export default function DayEditModal({ date, shifts, staff, onClose, onSaved }) {
   const [adding, setAdding] = useState(false)
@@ -165,7 +166,11 @@ export default function DayEditModal({ date, shifts, staff, onClose, onSaved }) 
                 <input
                   placeholder="10am–4pm"
                   value={newShift.time_text}
-                  onChange={(e) => setNewShift({ ...newShift, time_text: e.target.value })}
+                  onChange={(e) => {
+                    const t = e.target.value
+                    const calc = calcHoursFromTimeText(t)
+                    setNewShift({ ...newShift, time_text: t, ...(calc !== null ? { hours: calc } : {}) })
+                  }}
                 />
               </div>
               <div className="form-row">
@@ -173,7 +178,7 @@ export default function DayEditModal({ date, shifts, staff, onClose, onSaved }) 
                 <input
                   type="number"
                   step="0.25"
-                  placeholder="6.0"
+                  placeholder="자동 계산"
                   value={newShift.hours}
                   onChange={(e) => setNewShift({ ...newShift, hours: e.target.value })}
                 />
