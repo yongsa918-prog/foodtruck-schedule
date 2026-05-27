@@ -65,8 +65,12 @@ function StaffManager({ staff, onSaved }) {
     const name = editName.trim()
     if (!name) return
     setSaving(true)
-    const { error } = await supabase.from('staff').update({ name }).eq('id', id)
+    const [staffRes, assignmentRes] = await Promise.all([
+      supabase.from('staff').update({ name }).eq('id', id),
+      supabase.from('assignment').update({ member_text: name }).eq('staff_id', id),
+    ])
     setSaving(false)
+    const error = staffRes.error || assignmentRes.error
     if (error) alert('수정 실패: ' + error.message)
     else { setEditingId(null); onSaved() }
   }
