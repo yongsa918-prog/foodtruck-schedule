@@ -140,7 +140,10 @@ export default function PersonalView({ shifts, staff, onSaved }) {
     }))
   }, [shifts, staff])
 
-  const activeStaffId = selectedId || (staffWithCounts.length > 0 ? staffWithCounts[0].id : null)
+  const visibleStaff = staffWithCounts.filter((s) => s.count > 0)
+  const activeStaffId = (selectedId && visibleStaff.some((s) => s.id === selectedId))
+    ? selectedId
+    : (visibleStaff.length > 0 ? visibleStaff[0].id : null)
 
   const myShifts = useMemo(() => {
     if (!activeStaffId) return []
@@ -182,7 +185,7 @@ export default function PersonalView({ shifts, staff, onSaved }) {
       {isAdmin && managing && <StaffManager staff={staff} onSaved={onSaved} />}
 
       <div className="picker">
-        {staffWithCounts.map((s) => (
+        {staffWithCounts.filter((s) => s.count > 0).map((s) => (
           <button
             key={s.id}
             className={`pick-btn ${s.id === activeStaffId ? 'active' : ''}`}
