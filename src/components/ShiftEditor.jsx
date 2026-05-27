@@ -39,11 +39,11 @@ export default function ShiftEditor({ shift, staff, onDelete, onSaved }) {
   }
 
   async function handleAddAssignment(staffId) {
-    const person = staff.find((s) => s.id === staffId)
+    const person = staff.find((s) => String(s.id) === String(staffId))
     if (!person) return
     const { error } = await supabase.from('assignment').insert({
       shift_id: shift.id,
-      staff_id: staffId,
+      staff_id: person.id,
       member_text: person.name,
       is_driver: false,
       is_tentative: false,
@@ -143,7 +143,7 @@ export default function ShiftEditor({ shift, staff, onDelete, onSaved }) {
         ))}
         {availableStaff.length > 0 && (
           <div className="assignment-add">
-            <select defaultValue="" onChange={(e) => { if (e.target.value) { handleAddAssignment(parseInt(e.target.value)); e.target.value = '' } }}>
+            <select defaultValue="" onChange={(e) => { if (e.target.value) { handleAddAssignment(e.target.value); e.target.value = '' } }}>
               <option value="" disabled>+ 인원 추가...</option>
               {availableStaff.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>

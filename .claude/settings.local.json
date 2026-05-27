@@ -1,7 +1,20 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(npm create *)"
+      "PowerShell(npm create *)",
+      "PowerShell(npm run *)",
+      "PowerShell(Get-Item *)",
+      "PowerShell(cipher /c \"$PWD\\\\.env\")",
+      "PowerShell(npx vite build 2>&1 | Select-Object -First 10)",
+      "Bash(npx vite *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\yongs\\\\OneDrive\\\\바탕 화면\\\\푸드트럭\" -Recurse -Name -Include \"*.tsx\", \"*.ts\", \"*.jsx\", \"*.js\")",
+      "Bash(Select-Object -First 50)",
+      "Bash(npx -y xlsx-cli \"Excel Sample\\\\2026 Truck Schedule  .xlsx\")",
+      "Bash(npx -y xlsx-cli --list-sheets \"Excel Sample\\\\2026 Truck Schedule  .xlsx\")",
+      "Bash(npx -y xlsx-cli --sheet \"6월\" \"Excel Sample\\\\2026 Truck Schedule  .xlsx\")",
+      "Bash(npx -y xlsx-cli --list-sheets \"Excel Sample\\\\6월 트럭 스케줄 여기서 수정 \\(1\\).xlsx\")",
+      "Bash(npx -y xlsx-cli --sheet \"일별 스케줄\" \"Excel Sample\\\\6월 트럭 스케줄 여기서 수정 \\(1\\).xlsx\")",
+      "Bash(git add *)"
     ]
   }
 }

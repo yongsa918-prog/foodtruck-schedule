@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabaseClient'
 
 export function useScheduleData(year, month) {
@@ -6,6 +6,7 @@ export function useScheduleData(year, month) {
   const [staff, setStaff] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const channelRef = useRef(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -43,6 +44,25 @@ export function useScheduleData(year, month) {
   }, [year, month])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  useEffect(() => {
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current)
+    }
+
+    const channel = supabase
+      .channel(`schedule-${year}-${month}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'shift' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'assignment' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff' }, () => fetchData())
+      .subscribe()
+
+    channelRef.current = channel
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [year, month, fetchData])
 
   return { shifts, staff, loading, error, refresh: fetchData }
 }

@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { supabase } from '../supabaseClient'
+import { useAdmin } from '../hooks/useAdminAuth'
 import { truckClass, isMatchNote } from '../utils/colors'
 
 const DOW = ['일', '월', '화', '수', '목', '금', '토']
@@ -42,8 +44,89 @@ function PersonShiftCard({ shift, assignment, staffId }) {
   )
 }
 
-export default function PersonalView({ shifts, staff }) {
+function StaffManager({ staff, onSaved }) {
+  const [newName, setNewName] = useState('')
+  const [editingId, setEditingId] = useState(null)
+  const [editName, setEditName] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function handleAdd(e) {
+    e.preventDefault()
+    const name = newName.trim()
+    if (!name) return
+    setSaving(true)
+    const { error } = await supabase.from('staff').insert({ name, active: true })
+    setSaving(false)
+    if (error) alert('추가 실패: ' + error.message)
+    else { setNewName(''); onSaved() }
+  }
+
+  async function handleRename(id) {
+    const name = editName.trim()
+    if (!name) return
+    setSaving(true)
+    const { error } = await supabase.from('staff').update({ name }).eq('id', id)
+    setSaving(false)
+    if (error) alert('수정 실패: ' + error.message)
+    else { setEditingId(null); onSaved() }
+  }
+
+  async function handleDelete(s) {
+    if (!confirm(`"${s.name}" 직원을 삭제할까요? 배정 기록도 모두 삭제됩니다.`)) return
+    await supabase.from('assignment').delete().eq('staff_id', s.id)
+    await supabase.from('staff').delete().eq('id', s.id)
+    onSaved()
+  }
+
+  function startEdit(s) {
+    setEditingId(s.id)
+    setEditName(s.name)
+  }
+
+  return (
+    <div className="staff-manager">
+      <div className="staff-manager-title">직원 관리</div>
+      <div className="staff-list">
+        {staff.map((s) => (
+          <div key={s.id} className="staff-row">
+            {editingId === s.id ? (
+              <form className="staff-edit-form" onSubmit={(e) => { e.preventDefault(); handleRename(s.id) }}>
+                <input
+                  className="staff-edit-input"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  autoFocus
+                />
+                <button type="submit" className="btn-sm primary" disabled={saving}>저장</button>
+                <button type="button" className="btn-sm" onClick={() => setEditingId(null)}>취소</button>
+              </form>
+            ) : (
+              <>
+                <span className="staff-row-name">{s.name}</span>
+                <button className="btn-sm" onClick={() => startEdit(s)}>이름 수정</button>
+                <button className="btn-sm danger" onClick={() => handleDelete(s)}>삭제</button>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+      <form className="staff-add-form" onSubmit={handleAdd}>
+        <input
+          className="staff-add-input"
+          placeholder="새 직원 이름"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+        />
+        <button type="submit" className="btn-primary" disabled={saving || !newName.trim()}>추가</button>
+      </form>
+    </div>
+  )
+}
+
+export default function PersonalView({ shifts, staff, onSaved }) {
+  const { isAdmin } = useAdmin()
   const [selectedId, setSelectedId] = useState(null)
+  const [managing, setManaging] = useState(false)
 
   const staffWithCounts = useMemo(() => {
     return staff.map((s) => ({
@@ -79,7 +162,20 @@ export default function PersonalView({ shifts, staff }) {
 
   return (
     <div>
-      <div className="picker-label">이름 선택</div>
+      <div className="picker-row">
+        <div className="picker-label">이름 선택</div>
+        {isAdmin && (
+          <button
+            className={`btn-manage ${managing ? 'active' : ''}`}
+            onClick={() => setManaging(!managing)}
+          >
+            {managing ? '완료' : '직원 관리'}
+          </button>
+        )}
+      </div>
+
+      {isAdmin && managing && <StaffManager staff={staff} onSaved={onSaved} />}
+
       <div className="picker">
         {staffWithCounts.map((s) => (
           <button

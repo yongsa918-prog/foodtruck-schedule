@@ -87,7 +87,7 @@ export default function CalendarView({ shifts, year, month, onDayClick }) {
         {cells.map((cell, idx) => (
           <div
             key={idx}
-            className={`cal-cell ${cell.type} ${cell.type !== 'out' ? 'clickable' : ''}`}
+            className={`cal-cell ${cell.type} ${cell.type !== 'out' && onDayClick ? 'clickable' : ''}`}
             onClick={() => cell.type !== 'out' && onDayClick && onDayClick(cell.day)}
           >
             <div className="day-num">{cell.day}</div>

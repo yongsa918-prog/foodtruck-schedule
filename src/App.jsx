@@ -2,7 +2,9 @@ import { useState } from 'react'
 import CalendarView from './components/CalendarView'
 import PersonalView from './components/PersonalView'
 import DayEditModal from './components/DayEditModal'
+import AdminLock from './components/AdminLock'
 import { useScheduleData } from './hooks/useScheduleData'
+import { useAdmin } from './hooks/useAdminAuth'
 
 export default function App() {
   const [tab, setTab] = useState('calendar')
@@ -10,6 +12,7 @@ export default function App() {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [editDate, setEditDate] = useState(null)
+  const { isAdmin } = useAdmin()
 
   const { shifts, staff, loading, error, refresh } = useScheduleData(year, month)
 
@@ -23,6 +26,7 @@ export default function App() {
   }
 
   function handleDayClick(day) {
+    if (!isAdmin) return
     setEditDate(new Date(year, month - 1, day))
   }
 
@@ -37,8 +41,13 @@ export default function App() {
   return (
     <div className="app">
       <div className="header">
-        <div className="header-title">푸드트럭 스케줄</div>
-        <div className="header-sub">Vancouver · 날짜를 눌러 편집</div>
+        <div>
+          <div className="header-title">푸드트럭 스케줄</div>
+          <div className="header-sub">
+            Vancouver · {isAdmin ? '편집 모드' : '읽기 전용'}
+          </div>
+        </div>
+        <AdminLock />
       </div>
 
       <div className="tabs">
@@ -66,10 +75,10 @@ export default function App() {
       {error && <div className="error">오류: {error}</div>}
 
       {!loading && !error && tab === 'calendar' && (
-        <CalendarView shifts={shifts} year={year} month={month} onDayClick={handleDayClick} />
+        <CalendarView shifts={shifts} year={year} month={month} onDayClick={isAdmin ? handleDayClick : undefined} />
       )}
       {!loading && !error && tab === 'personal' && (
-        <PersonalView shifts={shifts} staff={staff} />
+        <PersonalView shifts={shifts} staff={staff} onSaved={handleSaved} />
       )}
 
       {editDate && (
