@@ -2,6 +2,7 @@ import { useState } from 'react'
 import CalendarView from './components/CalendarView'
 import PersonalView from './components/PersonalView'
 import DayEditModal from './components/DayEditModal'
+import ExcelUpload from './components/ExcelUpload'
 import AdminLock from './components/AdminLock'
 import { useScheduleData } from './hooks/useScheduleData'
 import { useAdmin } from './hooks/useAdminAuth'
@@ -12,6 +13,7 @@ export default function App() {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [editDate, setEditDate] = useState(null)
+  const [showExcel, setShowExcel] = useState(false)
   const { isAdmin } = useAdmin()
 
   const { shifts, staff, loading, error, refresh } = useScheduleData(year, month)
@@ -69,6 +71,11 @@ export default function App() {
         <button onClick={prevMonth}>◀</button>
         <span className="month-label">{year}년 {month}월</span>
         <button onClick={nextMonth}>▶</button>
+        {isAdmin && (
+          <button className="btn-excel" onClick={() => setShowExcel(true)}>
+            📊 엑셀 업로드
+          </button>
+        )}
       </div>
 
       {loading && <div className="loading">불러오는 중...</div>}
@@ -88,6 +95,13 @@ export default function App() {
           staff={staff}
           onClose={handleModalClose}
           onSaved={handleSaved}
+        />
+      )}
+
+      {showExcel && (
+        <ExcelUpload
+          staff={staff}
+          onDone={() => { setShowExcel(false); refresh() }}
         />
       )}
     </div>
