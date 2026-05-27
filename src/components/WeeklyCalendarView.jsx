@@ -41,7 +41,7 @@ function ShiftCard({ shift }) {
   )
 }
 
-export default function WeeklyCalendarView({ shifts, weekStart, onDayClick }) {
+export default function WeeklyCalendarView({ shifts, weekStart, onDayClick, bulkMode, selectedDates }) {
   const todayStr = formatDateStr(new Date())
 
   const days = []
@@ -69,14 +69,16 @@ export default function WeeklyCalendarView({ shifts, weekStart, onDayClick }) {
           const isWeekend = dow === 0 || dow === 6
           const isToday = dateStr === todayStr
           const isEmpty = dayShifts.length === 0
+          const isSelected = bulkMode && selectedDates?.has(dateStr)
 
           return (
             <div
               key={dateStr}
-              className={`week-day ${isEmpty ? 'off' : ''} ${isToday ? 'today' : ''} ${onDayClick ? 'clickable' : ''}`}
+              className={`week-day ${isEmpty ? 'off' : ''} ${isToday ? 'today' : ''} ${onDayClick ? 'clickable' : ''} ${isSelected ? 'bulk-selected' : ''}`}
               onClick={() => onDayClick && onDayClick(date)}
             >
               <div className={`week-day-header ${isEmpty ? 'no-shifts' : ''}`}>
+                {bulkMode && <span className={`bulk-check ${isSelected ? 'on' : ''}`}>{isSelected ? '✓' : '○'}</span>}
                 <span className="week-day-num">{date.getDate()}</span>
                 <span className={`week-day-dow ${isWeekend ? 'we' : ''}`}>{DOW_LABELS[dow]}</span>
                 {isToday && <span className="week-day-today">오늘</span>}

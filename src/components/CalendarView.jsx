@@ -37,7 +37,7 @@ function ShiftCard({ shift }) {
   )
 }
 
-export default function CalendarView({ shifts, year, month, onDayClick }) {
+export default function CalendarView({ shifts, year, month, onDayClick, bulkMode, selectedDates }) {
   const firstDay = new Date(year, month - 1, 1).getDay()
   const daysInMonth = new Date(year, month, 0).getDate()
   const prevMonthDays = new Date(year, month - 1, 0).getDate()
@@ -84,19 +84,23 @@ export default function CalendarView({ shifts, year, month, onDayClick }) {
       </div>
 
       <div className="cal-grid">
-        {cells.map((cell, idx) => (
+        {cells.map((cell, idx) => {
+          const dateStr = cell.type !== 'out' ? `${year}-${String(month).padStart(2,'0')}-${String(cell.day).padStart(2,'0')}` : ''
+          const isSelected = bulkMode && selectedDates?.has(dateStr)
+          return (
           <div
             key={idx}
-            className={`cal-cell ${cell.type} ${cell.type !== 'out' && onDayClick ? 'clickable' : ''}`}
+            className={`cal-cell ${cell.type} ${cell.type !== 'out' && onDayClick ? 'clickable' : ''} ${isSelected ? 'bulk-selected' : ''}`}
             onClick={() => cell.type !== 'out' && onDayClick && onDayClick(cell.day)}
           >
-            <div className="day-num">{cell.day}</div>
+            <div className="day-num">{bulkMode && cell.type !== 'out' && <span className={`bulk-check ${isSelected ? 'on' : ''}`}>{isSelected ? '✓' : '○'}</span>}{cell.day}</div>
             {cell.type === 'empty' && <div className="day-off">휴무</div>}
             {cell.type === 'active' && cell.shifts.map((s) => (
               <ShiftCard key={s.id} shift={s} />
             ))}
           </div>
-        ))}
+          )
+        })}
       </div>
 
       <div className="footer">

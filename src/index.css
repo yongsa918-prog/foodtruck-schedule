@@ -1322,6 +1322,75 @@ body {
   color: var(--muted);
 }
 
+/* Bulk delete */
+.btn-bulk {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  border: 1.5px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: 0.12s;
+  white-space: nowrap;
+}
+.btn-bulk:hover { border-color: var(--match); color: var(--match); }
+.btn-bulk.active {
+  background: var(--matchbg);
+  border-color: var(--match);
+  color: var(--match);
+}
+.bulk-check {
+  font-size: 14px;
+  margin-right: 4px;
+  color: var(--muted);
+}
+.bulk-check.on {
+  color: var(--match);
+  font-weight: 700;
+}
+.cal-cell.bulk-selected {
+  background: var(--matchbg) !important;
+  border-color: var(--match);
+}
+.week-day.bulk-selected {
+  background: var(--matchbg) !important;
+  border-color: var(--match);
+}
+.bulk-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--ink);
+  color: #fff;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 999;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+}
+.btn-bulk-delete {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  background: var(--match);
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: 0.12s;
+}
+.btn-bulk-delete:hover { opacity: 0.9; }
+.btn-bulk-delete:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* Print button */
 .btn-print {
   font-family: inherit;
@@ -1611,6 +1680,39 @@ body {
 .btn-overlap.append:hover { border-color: #2563eb; background: #eff6ff; }
 .btn-overlap.preview:hover { border-color: var(--ink); background: var(--paper); }
 .excel-overlap-cancel { align-self: center; }
+
+/* Sheet selection */
+.excel-sheet-select {
+  text-align: center;
+}
+.excel-sheet-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+.excel-sheet-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.excel-sheet-btn {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  border: 1.5px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: 0.12s;
+}
+.excel-sheet-btn:hover {
+  border-color: var(--t1);
+  background: var(--t1bg);
+  color: var(--t1);
+}
 
 /* Print styles */
 @media print {

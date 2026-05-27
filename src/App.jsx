@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import html2canvas from 'html2canvas'
+import { supabase } from './supabaseClient'
 import CalendarView from './components/CalendarView'
 import WeeklyCalendarView from './components/WeeklyCalendarView'
 import PersonalView from './components/PersonalView'
@@ -75,6 +76,9 @@ export default function App() {
   const [editDate, setEditDate] = useState(null)
   const [showExcel, setShowExcel] = useState(false)
   const [showWeekPicker, setShowWeekPicker] = useState(false)
+  const [bulkMode, setBulkMode] = useState(false)
+  const [selectedDates, setSelectedDates] = useState(new Set())
+  const [deleting, setDeleting] = useState(false)
   const { isAdmin } = useAdmin()
   const monthPickerRef = useRef(null)
 
@@ -162,13 +166,46 @@ export default function App() {
     setShowWeekPicker(false)
   }
 
+  function toggleDate(dateStr) {
+    setSelectedDates(prev => {
+      const next = new Set(prev)
+      if (next.has(dateStr)) next.delete(dateStr)
+      else next.add(dateStr)
+      return next
+    })
+  }
+
+  async function handleBulkDelete() {
+    if (selectedDates.size === 0) return
+    const dates = [...selectedDates].sort()
+    if (!confirm(`${dates.length}일의 시프트를 모두 삭제할까요?`)) return
+    setDeleting(true)
+    for (const date of dates) {
+      const { data: existingShifts } = await supabase.from('shift').select('id').eq('work_date', date)
+      if (existingShifts?.length) {
+        const ids = existingShifts.map(s => s.id)
+        await supabase.from('assignment').delete().in('shift_id', ids)
+        await supabase.from('shift').delete().in('id', ids)
+      }
+    }
+    setDeleting(false)
+    setSelectedDates(new Set())
+    setBulkMode(false)
+    refresh()
+  }
+
   function handleDayClick(day) {
     if (!isAdmin) return
+    const dateStr = `${year}-${pad2(month)}-${pad2(day)}`
+    if (bulkMode) { toggleDate(dateStr); return }
     setEditDate(new Date(year, month - 1, day))
   }
 
   function handleWeekDayClick(date) {
     if (!isAdmin) return
+    const d = new Date(date)
+    const dateStr = formatDate(d)
+    if (bulkMode) { toggleDate(dateStr); return }
     setEditDate(new Date(date))
   }
 
@@ -279,6 +316,9 @@ export default function App() {
               {downloading ? '저장 중...' : '📷 이미지 저장'}
             </button>
           )}
+          <button className={`btn-bulk ${bulkMode ? 'active' : ''}`} onClick={() => { setBulkMode(!bulkMode); setSelectedDates(new Set()) }}>
+            {bulkMode ? '취소' : '🗑️ 일괄 삭제'}
+          </button>
           <button className="btn-excel" onClick={() => setShowExcel(true)}>
             📊 엑셀 업로드
           </button>
@@ -298,9 +338,14 @@ export default function App() {
             </button>
           )}
           {isAdmin && (
-            <button className="btn-excel" onClick={() => setShowExcel(true)}>
-              📊 엑셀 업로드
-            </button>
+            <>
+              <button className={`btn-bulk ${bulkMode ? 'active' : ''}`} onClick={() => { setBulkMode(!bulkMode); setSelectedDates(new Set()) }}>
+                {bulkMode ? '취소' : '🗑️ 일괄 삭제'}
+              </button>
+              <button className="btn-excel" onClick={() => setShowExcel(true)}>
+                📊 엑셀 업로드
+              </button>
+            </>
           )}
         </div>
       )}
@@ -310,13 +355,15 @@ export default function App() {
 
       <div ref={contentRef}>
         {!loading && !error && activeTab === 'monthly' && isAdmin && (
-          <CalendarView shifts={shifts} year={year} month={month} onDayClick={handleDayClick} />
+          <CalendarView shifts={shifts} year={year} month={month} onDayClick={handleDayClick} bulkMode={bulkMode} selectedDates={selectedDates} />
         )}
         {!loading && !error && activeTab === 'weekly' && (
           <WeeklyCalendarView
             shifts={shifts}
             weekStart={weekStart}
             onDayClick={isAdmin ? handleWeekDayClick : undefined}
+            bulkMode={bulkMode}
+            selectedDates={selectedDates}
           />
         )}
       </div>
@@ -332,6 +379,15 @@ export default function App() {
           onClose={() => setEditDate(null)}
           onSaved={refresh}
         />
+      )}
+
+      {bulkMode && selectedDates.size > 0 && (
+        <div className="bulk-bar">
+          <span>{selectedDates.size}일 선택됨</span>
+          <button className="btn-bulk-delete" onClick={handleBulkDelete} disabled={deleting}>
+            {deleting ? '삭제 중...' : `선택한 ${selectedDates.size}일 시프트 모두 삭제`}
+          </button>
+        </div>
       )}
 
       {showExcel && (

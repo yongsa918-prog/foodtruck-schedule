@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { supabase } from '../supabaseClient'
-import { parseExcelFile } from '../utils/parseExcel'
+import { getSheetNames, parseExcelFile } from '../utils/parseExcel'
 import { truckClass } from '../utils/colors'
 
 export default function ExcelUpload({ staff, onDone }) {
@@ -11,6 +11,8 @@ export default function ExcelUpload({ staff, onDone }) {
   const [progress, setProgress] = useState('')
   const [overlap, setOverlap] = useState(null)
   const [step, setStep] = useState('file')
+  const [sheetNames, setSheetNames] = useState([])
+  const [selectedFile, setSelectedFile] = useState(null)
 
   async function handleFile(e) {
     const file = e.target.files?.[0]
@@ -20,9 +22,25 @@ export default function ExcelUpload({ staff, onDone }) {
     setOverlap(null)
     setStep('file')
     try {
-      const result = await parseExcelFile(file)
+      const names = await getSheetNames(file)
+      setSelectedFile(file)
+      if (names.length > 1) {
+        setSheetNames(names)
+        setStep('sheet')
+        return
+      }
+      await parseAndCheck(file, names[0])
+    } catch (err) {
+      setError('파일 읽기 실패: ' + err.message)
+    }
+  }
+
+  async function parseAndCheck(file, sheetName) {
+    try {
+      const result = await parseExcelFile(file, sheetName)
       if (result.shifts.length === 0) {
         setError('파싱된 시프트가 없습니다. 엑셀 형식을 확인해주세요.')
+        setStep('sheet')
         return
       }
       setParsed(result)
@@ -195,6 +213,23 @@ export default function ExcelUpload({ staff, onDone }) {
           )}
 
           {error && <div className="error">{error}</div>}
+
+          {step === 'sheet' && (
+            <div className="excel-sheet-select">
+              <div className="excel-sheet-title">시트를 선택하세요</div>
+              <div className="excel-sheet-list">
+                {sheetNames.map((name) => (
+                  <button
+                    key={name}
+                    className="excel-sheet-btn"
+                    onClick={() => { setError(null); parseAndCheck(selectedFile, name) }}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {step === 'overlap' && overlap && (
             <div className="excel-overlap">
