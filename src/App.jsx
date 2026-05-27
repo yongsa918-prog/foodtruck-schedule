@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
+import html2canvas from 'html2canvas'
 import CalendarView from './components/CalendarView'
 import WeeklyCalendarView from './components/WeeklyCalendarView'
 import PersonalView from './components/PersonalView'
@@ -22,22 +23,47 @@ function getMonday(d) {
   return date
 }
 
-function toISOWeek(d) {
-  const date = new Date(d)
-  date.setHours(0, 0, 0, 0)
-  date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7)
-  const w1 = new Date(date.getFullYear(), 0, 4)
-  const wn = 1 + Math.round(((date - w1) / 86400000 - 3 + (w1.getDay() + 6) % 7) / 7)
-  return `${date.getFullYear()}-W${pad2(wn)}`
+function getMonthWeeks(y, m) {
+  const daysInMonth = new Date(y, m, 0).getDate()
+  const weeks = []
+  for (let s = 1; s <= daysInMonth; s += 7) {
+    const e = Math.min(s + 6, daysInMonth)
+    weeks.push({ start: s, end: e })
+  }
+  return weeks
 }
 
-function fromISOWeek(str) {
-  const [y, w] = str.split('-W').map(Number)
-  const jan4 = new Date(y, 0, 4)
-  const mon = new Date(jan4)
-  mon.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7) + (w - 1) * 7)
-  mon.setHours(0, 0, 0, 0)
-  return mon
+function WeekPicker({ year, month, onSelect, onClose }) {
+  const [py, setPy] = useState(year)
+  const [pm, setPm] = useState(month)
+  const weeks = getMonthWeeks(py, pm)
+
+  function prev() { if (pm === 1) { setPy(py - 1); setPm(12) } else setPm(pm - 1) }
+  function next() { if (pm === 12) { setPy(py + 1); setPm(1) } else setPm(pm + 1) }
+
+  return (
+    <div className="wpicker-overlay" onClick={onClose}>
+      <div className="wpicker" onClick={(e) => e.stopPropagation()}>
+        <div className="wpicker-nav">
+          <button onClick={prev}>◀</button>
+          <span>{py}년 {pm}월</span>
+          <button onClick={next}>▶</button>
+        </div>
+        <div className="wpicker-list">
+          {weeks.map((w, i) => (
+            <button
+              key={i}
+              className="wpicker-item"
+              onClick={() => onSelect(new Date(py, pm - 1, w.start))}
+            >
+              <span className="wpicker-label">{i + 1}주차</span>
+              <span className="wpicker-range">{pm}/{w.start} – {pm}/{w.end}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function App() {
@@ -48,9 +74,9 @@ export default function App() {
   const [weekStart, setWeekStart] = useState(() => getMonday(now))
   const [editDate, setEditDate] = useState(null)
   const [showExcel, setShowExcel] = useState(false)
+  const [showWeekPicker, setShowWeekPicker] = useState(false)
   const { isAdmin } = useAdmin()
   const monthPickerRef = useRef(null)
-  const weekPickerRef = useRef(null)
 
   useEffect(() => {
     if (isAdmin) setTab('monthly')
@@ -115,7 +141,7 @@ export default function App() {
   function handleDateLabelClick() {
     if (!isAdmin) return
     if (activeTab === 'weekly') {
-      weekPickerRef.current?.showPicker()
+      setShowWeekPicker(true)
     } else {
       monthPickerRef.current?.showPicker()
     }
@@ -128,12 +154,12 @@ export default function App() {
     setMonth(m)
   }
 
-  function handleWeekPick(e) {
-    if (!e.target.value) return
-    const mon = fromISOWeek(e.target.value)
+  function handleWeekSelect(date) {
+    const mon = getMonday(date)
     setWeekStart(mon)
     setYear(mon.getFullYear())
     setMonth(mon.getMonth() + 1)
+    setShowWeekPicker(false)
   }
 
   function handleDayClick(day) {
@@ -146,9 +172,63 @@ export default function App() {
     setEditDate(new Date(date))
   }
 
+  const contentRef = useRef(null)
+  const [downloading, setDownloading] = useState(false)
+
   const weekEnd = new Date(weekStart)
   weekEnd.setDate(weekEnd.getDate() + 6)
   const weekLabel = `${weekStart.getMonth() + 1}/${weekStart.getDate()} – ${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`
+
+  const printTitle = activeTab === 'weekly'
+    ? `푸드트럭 스케줄 — ${weekLabel}`
+    : `푸드트럭 스케줄 — ${year}년 ${month}월`
+
+  async function handleDownloadImage() {
+    if (!contentRef.current || downloading) return
+    setDownloading(true)
+    try {
+      const LETTER_W = 1700
+      const LETTER_H = 2200
+      const PAD = 60
+      const TITLE_H = 70
+
+      const captured = await html2canvas(contentRef.current, {
+        scale: 2,
+        backgroundColor: '#fbf9f4',
+        useCORS: true,
+      })
+
+      const out = document.createElement('canvas')
+      out.width = LETTER_W
+      out.height = LETTER_H
+      const ctx = out.getContext('2d')
+
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, LETTER_W, LETTER_H)
+
+      ctx.fillStyle = '#18191c'
+      ctx.font = 'bold 36px "Noto Sans KR", sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText(printTitle, LETTER_W / 2, PAD + 36)
+
+      const area = { x: PAD, y: PAD + TITLE_H, w: LETTER_W - PAD * 2, h: LETTER_H - PAD * 2 - TITLE_H }
+      const scale = Math.min(area.w / captured.width, area.h / captured.height)
+      const dw = captured.width * scale
+      const dh = captured.height * scale
+      ctx.drawImage(captured, area.x + (area.w - dw) / 2, area.y, dw, dh)
+
+      const link = document.createElement('a')
+      const fname = activeTab === 'weekly'
+        ? `schedule-${formatDate(weekStart)}.jpg`
+        : `schedule-${year}-${pad2(month)}.jpg`
+      link.download = fname
+      link.href = out.toDataURL('image/jpeg', 0.92)
+      link.click()
+    } catch (err) {
+      alert('이미지 생성 실패: ' + err.message)
+    }
+    setDownloading(false)
+  }
 
   return (
     <div className="app">
@@ -185,18 +265,20 @@ export default function App() {
         </button>
       </div>
 
-      {isAdmin && (
-        <>
-          <input type="month" ref={monthPickerRef} className="date-picker-hidden" value={`${year}-${pad2(month)}`} onChange={handleMonthPick} />
-          <input type="week" ref={weekPickerRef} className="date-picker-hidden" value={toISOWeek(weekStart)} onChange={handleWeekPick} />
-        </>
-      )}
+      {isAdmin && <input type="month" ref={monthPickerRef} className="date-picker-hidden" value={`${year}-${pad2(month)}`} onChange={handleMonthPick} />}
+
+      <div className="print-header">{printTitle}</div>
 
       {isAdmin && activeTab !== 'weekly' ? (
         <div className="month-nav">
           <button onClick={prevMonth}>◀</button>
           <span className="month-label clickable" onClick={handleDateLabelClick}>{year}년 {month}월</span>
           <button onClick={nextMonth}>▶</button>
+          {activeTab !== 'personal' && (
+            <button className="btn-print" onClick={handleDownloadImage} disabled={downloading}>
+              {downloading ? '저장 중...' : '📷 이미지 저장'}
+            </button>
+          )}
           <button className="btn-excel" onClick={() => setShowExcel(true)}>
             📊 엑셀 업로드
           </button>
@@ -210,6 +292,11 @@ export default function App() {
             <span className="month-label">{weekLabel}</span>
           )}
           <button onClick={nextWeek} disabled={!canNextWeek}>▶</button>
+          {activeTab !== 'personal' && (
+            <button className="btn-print" onClick={handleDownloadImage} disabled={downloading}>
+              {downloading ? '저장 중...' : '📷 이미지 저장'}
+            </button>
+          )}
           {isAdmin && (
             <button className="btn-excel" onClick={() => setShowExcel(true)}>
               📊 엑셀 업로드
@@ -221,16 +308,18 @@ export default function App() {
       {loading && <div className="loading">불러오는 중...</div>}
       {error && <div className="error">오류: {error}</div>}
 
-      {!loading && !error && activeTab === 'monthly' && isAdmin && (
-        <CalendarView shifts={shifts} year={year} month={month} onDayClick={handleDayClick} />
-      )}
-      {!loading && !error && activeTab === 'weekly' && (
-        <WeeklyCalendarView
-          shifts={shifts}
-          weekStart={weekStart}
-          onDayClick={isAdmin ? handleWeekDayClick : undefined}
-        />
-      )}
+      <div ref={contentRef}>
+        {!loading && !error && activeTab === 'monthly' && isAdmin && (
+          <CalendarView shifts={shifts} year={year} month={month} onDayClick={handleDayClick} />
+        )}
+        {!loading && !error && activeTab === 'weekly' && (
+          <WeeklyCalendarView
+            shifts={shifts}
+            weekStart={weekStart}
+            onDayClick={isAdmin ? handleWeekDayClick : undefined}
+          />
+        )}
+      </div>
       {!loading && !error && activeTab === 'personal' && (
         <PersonalView shifts={shifts} staff={staff} onSaved={refresh} />
       )}
@@ -249,6 +338,15 @@ export default function App() {
         <ExcelUpload
           staff={staff}
           onDone={() => { setShowExcel(false); refresh() }}
+        />
+      )}
+
+      {showWeekPicker && (
+        <WeekPicker
+          year={year}
+          month={month}
+          onSelect={handleWeekSelect}
+          onClose={() => setShowWeekPicker(false)}
         />
       )}
     </div>
