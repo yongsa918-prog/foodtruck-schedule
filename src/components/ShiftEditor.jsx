@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient'
 import { truckClass } from '../utils/colors'
 import { calcHoursFromTimeText } from '../utils/timeCalc'
 
-export default function ShiftEditor({ shift, staff, onDelete, onSaved, showDragHandle, onDragHandleDown, onDragHandleUp }) {
+export default function ShiftEditor({ shift, staff, onDelete, onDuplicate, onSaved, showDragHandle, onDragHandleDown, onDragHandleUp }) {
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({
     truck: shift.truck,
@@ -138,6 +138,7 @@ export default function ShiftEditor({ shift, staff, onDelete, onSaved, showDragH
         {shift.hours && <span className="editor-hours">{shift.hours}h</span>}
         <div className="editor-actions">
           <button className="btn-icon" onClick={() => setEditing(!editing)} title="수정">✏️</button>
+          {onDuplicate && <button className="btn-icon" onClick={onDuplicate} title="복사">📋</button>}
           <button className="btn-icon" onClick={onDelete} title="삭제">🗑️</button>
         </div>
       </div>

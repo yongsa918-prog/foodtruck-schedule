@@ -46,6 +46,34 @@ export default function DayEditModal({ date, shifts, staff, onClose, onSaved }) 
     }
   }
 
+  async function handleDuplicateShift(shift) {
+    const maxOrder = dayShifts.reduce((max, s) => Math.max(max, s.sort_order ?? 0), -1)
+    const { data, error } = await supabase.from('shift').insert({
+      work_date: dateStr,
+      truck: shift.truck,
+      shift_label: shift.shift_label || null,
+      event: shift.event || null,
+      time_text: null,
+      hours: null,
+      note: shift.note || null,
+      sort_order: maxOrder + 1,
+    }).select()
+    if (error) { alert('복사 실패: ' + error.message); return }
+    if (data && data[0] && shift.assignment?.length > 0) {
+      await supabase.from('assignment').insert(
+        shift.assignment.map((a, i) => ({
+          shift_id: data[0].id,
+          staff_id: a.staff_id,
+          member_text: a.member_text,
+          is_driver: a.is_driver,
+          is_tentative: a.is_tentative,
+          sort_order: i,
+        }))
+      )
+    }
+    onSaved()
+  }
+
   async function handleDeleteShift(shiftId) {
     if (!confirm('이 시프트를 삭제할까요? 배정도 모두 삭제됩니다.')) return
     await supabase.from('assignment').delete().eq('shift_id', shiftId)
@@ -125,6 +153,7 @@ export default function DayEditModal({ date, shifts, staff, onClose, onSaved }) 
                 shift={shift}
                 staff={staff}
                 onDelete={() => handleDeleteShift(shift.id)}
+                onDuplicate={() => handleDuplicateShift(shift)}
                 onSaved={onSaved}
                 showDragHandle={dayShifts.length > 1}
                 onDragHandleDown={() => { dragAllowed.current = true }}
