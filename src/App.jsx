@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import CalendarView from './components/CalendarView'
 import WeeklyCalendarView from './components/WeeklyCalendarView'
 import PersonalView from './components/PersonalView'
@@ -22,6 +22,24 @@ function getMonday(d) {
   return date
 }
 
+function toISOWeek(d) {
+  const date = new Date(d)
+  date.setHours(0, 0, 0, 0)
+  date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7)
+  const w1 = new Date(date.getFullYear(), 0, 4)
+  const wn = 1 + Math.round(((date - w1) / 86400000 - 3 + (w1.getDay() + 6) % 7) / 7)
+  return `${date.getFullYear()}-W${pad2(wn)}`
+}
+
+function fromISOWeek(str) {
+  const [y, w] = str.split('-W').map(Number)
+  const jan4 = new Date(y, 0, 4)
+  const mon = new Date(jan4)
+  mon.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7) + (w - 1) * 7)
+  mon.setHours(0, 0, 0, 0)
+  return mon
+}
+
 export default function App() {
   const [tab, setTab] = useState('weekly')
   const now = new Date()
@@ -31,6 +49,12 @@ export default function App() {
   const [editDate, setEditDate] = useState(null)
   const [showExcel, setShowExcel] = useState(false)
   const { isAdmin } = useAdmin()
+  const monthPickerRef = useRef(null)
+  const weekPickerRef = useRef(null)
+
+  useEffect(() => {
+    if (isAdmin) setTab('monthly')
+  }, [isAdmin])
 
   const activeTab = (!isAdmin && tab === 'monthly') ? 'weekly' : tab
 
@@ -88,6 +112,30 @@ export default function App() {
     if (isAdmin) { setYear(d.getFullYear()); setMonth(d.getMonth() + 1) }
   }
 
+  function handleDateLabelClick() {
+    if (!isAdmin) return
+    if (activeTab === 'weekly') {
+      weekPickerRef.current?.showPicker()
+    } else {
+      monthPickerRef.current?.showPicker()
+    }
+  }
+
+  function handleMonthPick(e) {
+    if (!e.target.value) return
+    const [y, m] = e.target.value.split('-').map(Number)
+    setYear(y)
+    setMonth(m)
+  }
+
+  function handleWeekPick(e) {
+    if (!e.target.value) return
+    const mon = fromISOWeek(e.target.value)
+    setWeekStart(mon)
+    setYear(mon.getFullYear())
+    setMonth(mon.getMonth() + 1)
+  }
+
   function handleDayClick(day) {
     if (!isAdmin) return
     setEditDate(new Date(year, month - 1, day))
@@ -137,10 +185,17 @@ export default function App() {
         </button>
       </div>
 
+      {isAdmin && (
+        <>
+          <input type="month" ref={monthPickerRef} className="date-picker-hidden" value={`${year}-${pad2(month)}`} onChange={handleMonthPick} />
+          <input type="week" ref={weekPickerRef} className="date-picker-hidden" value={toISOWeek(weekStart)} onChange={handleWeekPick} />
+        </>
+      )}
+
       {isAdmin && activeTab !== 'weekly' ? (
         <div className="month-nav">
           <button onClick={prevMonth}>◀</button>
-          <span className="month-label">{year}년 {month}월</span>
+          <span className="month-label clickable" onClick={handleDateLabelClick}>{year}년 {month}월</span>
           <button onClick={nextMonth}>▶</button>
           <button className="btn-excel" onClick={() => setShowExcel(true)}>
             📊 엑셀 업로드
@@ -149,7 +204,11 @@ export default function App() {
       ) : (
         <div className="month-nav">
           <button onClick={prevWeek} disabled={!canPrevWeek}>◀</button>
-          <span className="month-label">{weekLabel}</span>
+          {isAdmin ? (
+            <span className="month-label clickable" onClick={handleDateLabelClick}>{weekLabel}</span>
+          ) : (
+            <span className="month-label">{weekLabel}</span>
+          )}
           <button onClick={nextWeek} disabled={!canNextWeek}>▶</button>
           {isAdmin && (
             <button className="btn-excel" onClick={() => setShowExcel(true)}>
