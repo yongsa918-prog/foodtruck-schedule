@@ -25,6 +25,7 @@ export function useScheduleData(startDate, endDate) {
         .from('staff')
         .select('*')
         .eq('active', true)
+        .order('sort_order')
         .order('name'),
     ])
 

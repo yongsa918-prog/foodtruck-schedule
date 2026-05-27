@@ -600,6 +600,15 @@ body {
   background: rgba(255,255,255,0.2);
   color: #fff;
 }
+.pick-btn.dragging {
+  opacity: 0.3;
+}
+.pick-btn.drag-over-left {
+  border-left: 3px solid var(--t1);
+}
+.pick-btn.drag-over-right {
+  border-right: 3px solid var(--t1);
+}
 
 .person-header {
   display: flex;

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef } from 'react'
 import { supabase } from '../supabaseClient'
 import { useAdmin } from '../hooks/useAdminAuth'
 import { truckClass, isMatchNote } from '../utils/colors'
@@ -55,7 +55,8 @@ function StaffManager({ staff, onSaved }) {
     const name = newName.trim()
     if (!name) return
     setSaving(true)
-    const { error } = await supabase.from('staff').insert({ name, active: true })
+    const maxOrder = staff.reduce((max, s) => Math.max(max, s.sort_order ?? 0), -1)
+    const { error } = await supabase.from('staff').insert({ name, active: true, sort_order: maxOrder + 1 })
     setSaving(false)
     if (error) alert('추가 실패: ' + error.message)
     else { setNewName(''); onSaved() }
@@ -132,6 +133,9 @@ export default function PersonalView({ shifts, staff, onSaved }) {
   const { isAdmin } = useAdmin()
   const [selectedId, setSelectedId] = useState(null)
   const [managing, setManaging] = useState(false)
+  const [dragIdx, setDragIdx] = useState(null)
+  const [overIdx, setOverIdx] = useState(null)
+  const dragAllowed = useRef(false)
 
   const staffWithCounts = useMemo(() => {
     return staff.map((s) => ({
@@ -168,6 +172,48 @@ export default function PersonalView({ shifts, staff, onSaved }) {
     return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b))
   }, [myShifts])
 
+  function handleDragStart(e, idx) {
+    if (!dragAllowed.current) { e.preventDefault(); return }
+    setDragIdx(idx)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', '')
+  }
+
+  function handleDragOver(e, idx) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (overIdx !== idx) setOverIdx(idx)
+  }
+
+  async function handleDrop(e, idx) {
+    e.preventDefault()
+    if (dragIdx === null || dragIdx === idx) {
+      setDragIdx(null)
+      setOverIdx(null)
+      return
+    }
+
+    const reordered = [...visibleStaff]
+    const [moved] = reordered.splice(dragIdx, 1)
+    reordered.splice(idx, 0, moved)
+
+    setDragIdx(null)
+    setOverIdx(null)
+
+    await Promise.all(
+      reordered.map((s, i) =>
+        supabase.from('staff').update({ sort_order: i }).eq('id', s.id)
+      )
+    )
+    onSaved()
+  }
+
+  function handleDragEnd() {
+    dragAllowed.current = false
+    setDragIdx(null)
+    setOverIdx(null)
+  }
+
   return (
     <div>
       <div className="picker-row">
@@ -185,11 +231,18 @@ export default function PersonalView({ shifts, staff, onSaved }) {
       {isAdmin && managing && <StaffManager staff={staff} onSaved={onSaved} />}
 
       <div className="picker">
-        {staffWithCounts.filter((s) => s.count > 0).map((s) => (
+        {visibleStaff.map((s, idx) => (
           <button
             key={s.id}
-            className={`pick-btn ${s.id === activeStaffId ? 'active' : ''}`}
+            className={`pick-btn ${s.id === activeStaffId ? 'active' : ''}${isAdmin && dragIdx === idx ? ' dragging' : ''}${isAdmin && overIdx === idx && dragIdx !== null && dragIdx !== idx ? (dragIdx > idx ? ' drag-over-left' : ' drag-over-right') : ''}`}
             onClick={() => setSelectedId(s.id)}
+            draggable={isAdmin && visibleStaff.length > 1}
+            onDragStart={(e) => handleDragStart(e, idx)}
+            onDragOver={(e) => isAdmin && handleDragOver(e, idx)}
+            onDrop={(e) => isAdmin && handleDrop(e, idx)}
+            onDragEnd={handleDragEnd}
+            onMouseDown={(e) => { if (isAdmin && e.target.closest('.pick-btn')) dragAllowed.current = true }}
+            onMouseUp={() => { dragAllowed.current = false }}
           >
             {s.name}
             <span className="cnt">{s.count}</span>
